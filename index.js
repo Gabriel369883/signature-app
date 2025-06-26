@@ -3,28 +3,35 @@ const cors = require("cors");
 const fs = require("fs");
 const path = require("path");
 const nodemailer = require("nodemailer");
-const { PDFDocument, rgb } = require("pdf-lib");
+const { PDFDocument } = require("pdf-lib");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Ta fonction sendEmailWithPdf ici, avant les routes
+// Fonction d'envoi de l'email
 async function sendEmailWithPdf(toEmail) {
+  const link = `${process.env.FRONT_URL}/index.html`; // URL du frontend hébergé
+
   let transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: "gabrieldayan01@gmail.com",
-      pass: "hayr qnop nojs ifuu",
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_PASS,
     },
   });
 
   const pdfPath = path.join(__dirname, "input.pdf");
 
   let info = await transporter.sendMail({
-    from: '"Signature App" <gabrieldayan01@gmail.com>',
+    from: `"Signature App" <${process.env.GMAIL_USER}>`,
     to: toEmail,
     subject: "Merci de signer ce document",
-    text: "Bonjour,\n\n Si ce devis vous convient merci de bien vouloir le signer via ce lien : http://ton-ip:3000\n\nCordialement",
+    text: `Bonjour,
+
+Veuillez cliquer sur ce lien pour signer le document :
+${link}
+
+Cordialement.`,
     attachments: [
       {
         filename: "document-à-signer.pdf",
@@ -36,11 +43,12 @@ async function sendEmailWithPdf(toEmail) {
   console.log("✅ Email envoyé :", info.messageId);
 }
 
-// Middleware pour parser le JSON (notamment les images en base64)
+// Middlewares
 app.use(express.json({ limit: "10mb" }));
 app.use(cors());
+app.use(express.static("public"));
 
-// Route POST pour envoyer le mail
+// Route pour envoyer un mail
 app.post("/send-mail", async (req, res) => {
   const { email } = req.body;
 
@@ -55,10 +63,7 @@ app.post("/send-mail", async (req, res) => {
   }
 });
 
-// Servir les fichiers statiques (ex: index.html dans public/)
-app.use(express.static("public"));
-
-// Route POST pour recevoir la signature et générer le PDF signé
+// Route pour signer le PDF
 app.post("/sign", async (req, res) => {
   try {
     const signature = req.body.signature;
@@ -67,34 +72,26 @@ app.post("/sign", async (req, res) => {
       return res.status(400).json({ error: "Signature manquante." });
     }
 
-    // Extraire les données base64 de la signature
     const base64Data = signature.replace(/^data:image\/png;base64,/, "");
 
-    // Sauvegarder l'image temporairement
     const signaturePath = path.join(__dirname, "signature.png");
     fs.writeFileSync(signaturePath, base64Data, "base64");
 
-    // Charger le PDF modèle
     const pdfPath = path.join(__dirname, "input.pdf");
     const pdfBytes = fs.readFileSync(pdfPath);
-
-    // Charger le PDF avec pdf-lib
     const pdfDoc = await PDFDocument.load(pdfBytes);
 
-    // Intégrer l’image de signature dans le PDF
     const imageBytes = fs.readFileSync(signaturePath);
     const pngImage = await pdfDoc.embedPng(imageBytes);
 
     const pages = pdfDoc.getPages();
     const firstPage = pages[0];
 
-    // Position et taille de la signature (ajuste selon ton PDF)
     const sigX = 100;
     const sigY = 150;
     const sigWidth = 150;
     const sigHeight = (pngImage.height / pngImage.width) * sigWidth;
 
-    // Coller la signature sur la page
     firstPage.drawImage(pngImage, {
       x: sigX,
       y: sigY,
@@ -102,13 +99,11 @@ app.post("/sign", async (req, res) => {
       height: sigHeight,
     });
 
-    // Sauver le nouveau PDF
     const outputPdf = await pdfDoc.save();
     const outputPath = path.join(__dirname, "output.pdf");
     fs.writeFileSync(outputPath, outputPdf);
 
     console.log("✅ PDF signé généré :", outputPath);
-
     res.json({ message: "PDF signé créé avec succès." });
   } catch (err) {
     console.error("❌ Erreur PDF :", err);
@@ -116,7 +111,7 @@ app.post("/sign", async (req, res) => {
   }
 });
 
-// Route GET pour télécharger le PDF signé
+// Route pour télécharger le PDF signé
 app.get("/download", (req, res) => {
   const filePath = path.join(__dirname, "output.pdf");
   res.download(filePath, "document-signé.pdf", (err) => {
@@ -129,7 +124,7 @@ app.get("/download", (req, res) => {
   });
 });
 
-// Démarrer le serveur
 app.listen(PORT, () => {
-  console.log(`✅ Serveur backend sur http://localhost:${PORT}`);
+  console.log("✅ Serveur backend démarré.");
 });
+
