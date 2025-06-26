@@ -41,6 +41,41 @@
       });
       canvas.addEventListener("mousemove", draw);
 
+      // Pour tactile
+        function getTouchPos(canvasDom, touchEvent) {
+       const rect = canvasDom.getBoundingClientRect();
+       return {
+       x: touchEvent.touches[0].clientX - rect.left,
+       y: touchEvent.touches[0].clientY - rect.top
+        };
+      }
+
+       canvas.addEventListener("mousedown", () => (drawing = true));
+       canvas.addEventListener("mouseup", () => {
+       drawing = false;
+       ctx.beginPath();
+      });
+      
+    canvas.addEventListener("mousemove", draw);
+       canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        drawing = true;
+        const pos = getTouchPos(canvas, e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      });
+       canvas.addEventListener('touchmove', e => {
+       e.preventDefault();
+      if (!drawing) return;
+      const pos = getTouchPos(canvas, e);
+      ctx.lineTo(pos.x, pos.y);
+       ctx.stroke();
+     });
+      canvas.addEventListener('touchend', e => {
+      e.preventDefault();
+      drawing = false;
+    });
+
       function draw(e) {
         if (!drawing) return;
         ctx.lineWidth = 2;
@@ -88,7 +123,7 @@
       };
     });
   </script>
-  
+
   <form id="emailForm">
   <input type="email" id="email" placeholder="Adresse email" required />
   <button type="submit">Envoyer le document à signer</button>
