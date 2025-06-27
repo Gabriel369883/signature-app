@@ -99,12 +99,35 @@ app.post("/sign", async (req, res) => {
       height: sigHeight,
     });
 
-    const outputPdf = await pdfDoc.save();
-    const outputPath = path.join(__dirname, "output.pdf");
-    fs.writeFileSync(outputPath, outputPdf);
+    // Sauver le PDF en mémoire
+const outputPdf = await pdfDoc.save();
 
-    console.log("✅ PDF signé généré :", outputPath);
-    res.json({ message: "PDF signé créé avec succès." });
+// Envoyer le PDF signé par mail en pièce jointe
+let transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
+  },
+});
+
+   await transporter.sendMail({
+   from: '"Signature App" <gabrieldayan01@gmail.com>',
+   to: "DESTINATAIRE@EXEMPLE.COM", // <-- adapte ça dynamiquement si besoin
+   subject: "Document signé",
+   text: "Veuillez trouver ci-joint le PDF signé.",
+   attachments: [
+    {
+      filename: "document-signé.pdf",
+      content: Buffer.from(outputPdf),
+      contentType: "application/pdf",
+    },
+   ],
+   });
+
+   console.log("✅ PDF signé envoyé par mail");
+
+
   } catch (err) {
     console.error("❌ Erreur PDF :", err);
     res.status(500).json({ error: "Erreur lors de la génération du PDF." });
