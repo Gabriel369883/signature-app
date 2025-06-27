@@ -68,26 +68,34 @@ app.post("/send-pdf", upload.single("pdf"), async (req, res) => {
 // Enregistrement de la signature
 app.post("/sign", async (req, res) => {
   const { signature } = req.body;
-
   if (!signature) return res.status(400).json({ error: "Signature manquante" });
 
-  const base64 = signature.replace(/^data:image\/png;base64,/, "");
-  fs.writeFileSync("signature.png", base64, "base64");
+  try {
+    const base64 = signature.replace(/^data:image\/png;base64,/, "");
+    fs.writeFileSync("signature.png", base64, "base64");
+    console.log("✅ Signature PNG enregistrée");
 
-  const pdfBytes = fs.readFileSync("uploads/current.pdf");
-  const pdfDoc = await PDFDocument.load(pdfBytes);
-  const pngImage = await pdfDoc.embedPng(fs.readFileSync("signature.png"));
+    const pdfBytes = fs.readFileSync("uploads/current.pdf");
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    const pngImage = await pdfDoc.embedPng(fs.readFileSync("signature.png"));
 
-  const page = pdfDoc.getPages()[0];
-  page.drawImage(pngImage, {
-    x: 100, y: 150, width: 150,
-    height: (pngImage.height / pngImage.width) * 150,
-  });
+    const page = pdfDoc.getPages()[0];
+    page.drawImage(pngImage, {
+      x: 100,
+      y: 150,
+      width: 150,
+      height: (pngImage.height / pngImage.width) * 150,
+    });
 
-  const outputPdf = await pdfDoc.save();
-  fs.writeFileSync("uploads/signed.pdf", outputPdf);
+    const outputPdf = await pdfDoc.save();
+    fs.writeFileSync("uploads/signed.pdf", outputPdf);
+    console.log("✅ PDF signé enregistré");
 
-  res.json({ message: "Document signé avec succès." });
+    res.json({ message: "Document signé avec succès." });
+  } catch (error) {
+    console.error("❌ Erreur dans /sign :", error);
+    res.status(500).json({ error: "Erreur lors de la signature du PDF" });
+  }
 });
 
 // Téléchargement du PDF signé
