@@ -16,12 +16,12 @@ const app = express();
 app.use(express.json());
 
 app.get("/admin", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/admin/admin.html"));
+  res.sendFile(path.join(__dirname, "public/admin.html"));
 });
 
 // Route interface signer
 app.get("/signer", (req, res) => {
-  res.sendFile(path.join(__dirname, "public/signer/signer.html"));
+  res.sendFile(path.join(__dirname, "public/signer.html"));
 });
 
 
