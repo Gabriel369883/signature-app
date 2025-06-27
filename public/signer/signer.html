@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Signature de Document</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    canvas {
+      border: 2px solid #000;
+      cursor: crosshair;
+    }
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Signer le document</h1>
+  <canvas id="signature" width="500" height="200"></canvas>
+  <br />
+  <button onclick="clearCanvas()">Effacer</button>
+  <button onclick="sign()">Signer</button>
+
+  <script>
+    window.addEventListener("DOMContentLoaded", () => {
+      const canvas = document.getElementById("signature");
+      const ctx = canvas.getContext("2d");
+
+      let drawing = false;
+
+      canvas.addEventListener("mousedown", () => (drawing = true));
+      canvas.addEventListener("mouseup", () => {
+        drawing = false;
+        ctx.beginPath();
+      });
+      canvas.addEventListener("mousemove", draw);
+
+      // Pour tactile
+        function getTouchPos(canvasDom, touchEvent) {
+       const rect = canvasDom.getBoundingClientRect();
+       return {
+       x: touchEvent.touches[0].clientX - rect.left,
+       y: touchEvent.touches[0].clientY - rect.top
+        };
+      }
+
+       canvas.addEventListener("mousedown", () => (drawing = true));
+       canvas.addEventListener("mouseup", () => {
+       drawing = false;
+       ctx.beginPath();
+      });
+      
+    canvas.addEventListener("mousemove", draw);
+       canvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        drawing = true;
+        const pos = getTouchPos(canvas, e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+      });
+       canvas.addEventListener('touchmove', e => {
+       e.preventDefault();
+      if (!drawing) return;
+      const pos = getTouchPos(canvas, e);
+      ctx.lineTo(pos.x, pos.y);
+       ctx.stroke();
+     });
+      canvas.addEventListener('touchend', e => {
+      e.preventDefault();
+      drawing = false;
+    });
+
+      function draw(e) {
+        if (!drawing) return;
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#000";
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(e.offsetX, e.offsetY);
+      }
+
+      window.clearCanvas = function () {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      };
+
+      window.sign = function () {
+        const dataURL = canvas.toDataURL("image/png");
+
+        fetch("/sign", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ signature: dataURL }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            alert("✅ Signature envoyée !");
+            // ⬇️ Télécharger automatiquement le PDF
+            const link = document.createElement("a");
+            link.href = "/download";
+            link.download = "document-signé.pdf";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            // ⏳ Attendre 1 seconde puis essayer de fermer la fenêtre
+            setTimeout(() => {
+              window.close(); // Ne marchera que si la fenêtre a été ouverte par JavaScript
+            }, 1000);
+          })
+          .catch((err) => {
+            console.error("Erreur :", err);
+            alert("❌ Une erreur est survenue.");
+          });
+      };
+    });
+  </script>
+</body>
+</html>

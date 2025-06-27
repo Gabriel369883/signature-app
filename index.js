@@ -13,11 +13,26 @@ const upload = multer({
 });
 
 const app = express();
+app.use(express.json());
+
+app.get("/admin", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/admin/admin.html"));
+});
+
+// Route interface signer
+app.get("/signer", (req, res) => {
+  res.sendFile(path.join(__dirname, "public/signer/signer.html"));
+});
+
+
 const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Serveur lancé sur le port ${PORT}`);
+});
 
 // Fonction d'envoi de l'email
 async function sendEmailWithPdf(toEmail) {
-  const link = `${process.env.FRONT_URL}/index.html`; // URL du frontend hébergé
+  const link = `${process.env.FRONT_URL}/admin.html`; // URL du frontend hébergé
 
   let transporter = nodemailer.createTransport({
     service: "gmail",
