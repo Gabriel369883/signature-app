@@ -4,6 +4,13 @@ const fs = require("fs");
 const path = require("path");
 const nodemailer = require("nodemailer");
 const { PDFDocument } = require("pdf-lib");
+const multer = require("multer");
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, "./"), // ou "./uploads" si tu préfères un dossier dédié
+    filename: (req, file, cb) => cb(null, "input.pdf"), // on remplace l'ancien PDF
+  }),
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;

@@ -123,26 +123,5 @@
       };
     });
   </script>
-
-  <form id="emailForm">
-  <input type="email" id="email" placeholder="Adresse email" required />
-  <button type="submit">Envoyer le document à signer</button>
-</form>
-
-<script>
-  document.getElementById("emailForm").addEventListener("submit", function(e) {
-    e.preventDefault();
-    const email = document.getElementById("email").value;
-
-    fetch("/send-mail", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    })
-    .then(res => res.json())
-    .then(data => alert(data.message || "Email envoyé"))
-    .catch(err => alert("Erreur: " + err.message));
-  });
-  </script>
 </body>
 </html>
