@@ -56,6 +56,23 @@ async function submitSignature() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ signature: dataURL }),
   });
+   
+  fetch('/download')
+  .then(response => {
+    if (!response.ok) throw new Error('Fichier non trouvé');
+    return response.blob();
+  })
+  .then(blob => {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'document-signé.pdf';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  })
+  .catch(err => alert('Erreur téléchargement : ' + err.message));
 
   const data = await res.json();
   alert(data.message || "Erreur");
